@@ -311,6 +311,37 @@ def add_bib_data():
             counter += 1
 
 
+# def add_bib_data():
+#     """ Populates each item-dct with bib-data, and saves file. """
+#     start_time = datetime.datetime.now()
+#     auth_token = get_token()
+#     custom_headers = {'Authorization': f'Bearer {auth_token}' }
+#     source_dir = f'{FILE_DOWNLOAD_DIR}/c_items_dct'
+#     counter = 1
+#     for source_file in os.listdir( source_dir ):
+#         if source_file.endswith( '.json' ):
+#             source_filepath = f'{source_dir}/{source_file}'
+#             source_dct = {}
+#             with open( source_filepath, 'r' ) as f:
+#                 source_dct = json.loads( f.read() )
+#             for (key, val_dct) in source_dct.items():
+#                 log.debug( f'key, `{key}`' )
+
+#                 # bibs = source_dct[key]['item_dct']['bibIds']
+#                 # source_dct[key]['bib_dct'] = bibs
+
+#                 bibs = source_dct[key]['item_dct']['bibIds']
+
+#                 bib_url = '%sbibs/' % API_ROOT_URL
+#                 payload = { 'id': '1000001' }
+#                 log.debug( 'token_url, ```%s```' % token_url )
+#                 custom_headers = {'Authorization': 'Bearer %s' % token }
+#                 r = requests.get( bib_url, headers=custom_headers, params=payload )
+#                 log.debug( 'bib r.content, ```%s```' % r.content )
+
+#             save_items_and_bibs_dct( json.dumps(source_dct, sort_keys=True, indent=2), counter )
+#             counter += 1
+
 
 if __name__ == '__main__':
     arg = sys.argv[1] if len(sys.argv) == 2 else None
@@ -323,5 +354,7 @@ if __name__ == '__main__':
         trio.run( get_item_data )
     elif arg == 'add_bib_data':
         add_bib_data()
+    # elif arg == 'enhance_bib_data':
+    #     enhance_bib_data()
 
 
