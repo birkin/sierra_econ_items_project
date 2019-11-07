@@ -38,7 +38,7 @@ def get_token():
 def save_initial_downloads( jsn_str ):
     """ Saves raw json files from initial json-query calls.
         Called by run_json_query() """
-    filename= '%s/%s.json' % ( FILE_DOWNLOAD_DIR, str(datetime.datetime.now()).replace(' ', '_') )
+    filename= '%s/a_initial_downloads/%s.json' % ( FILE_DOWNLOAD_DIR, str(datetime.datetime.now()).replace(' ', '_') )
     with open( filename, 'wb' ) as f:
         f.write( jsn_str )
     return
@@ -46,6 +46,8 @@ def save_initial_downloads( jsn_str ):
 
 def run_json_query():
     """ Runs the json query and saves all files. """
+    log.debug( '\n-------\nrunning the json query' )
+    token = get_token()
     query_json = '''[
         [
           {
@@ -112,7 +114,7 @@ def run_json_query():
     # offset = 4000000 # got 100,000
     # offset = 5000000 # got 100,000
     # offset = 10000000 # got 0
-    offset = 0 # got 0
+    offset = 0
     limit = 100
     continue_flag = True
     custom_headers = {'Authorization': 'Bearer %s' % token }
@@ -121,19 +123,29 @@ def run_json_query():
         payload = { 'json': query_json }
         r = requests.post( items_query_url, headers=custom_headers, json=payload )
         log.debug( f'url was, ```{r.url}```' )
-        save_file( r.content )
+        save_initial_downloads( r.content )
         offset = offset + limit
-        if offset > 10000000:
-            continue_flag = False
-        rsp_dct = r.json()
-        if rsp_dct['total'] < 100000:
+        # if offset > 10000000:  # this is the REAL CODE
+        #     continue_flag = False
+        # rsp_dct = r.json()
+        # if rsp_dct['total'] < 100000:
+        #     continue_flag = False
+        if offset > 200:  # TESTING -- to save 3 files of 100 each
             continue_flag = False
 
     ## end def run_json_query()
 
 
+def get_bibs():
+    return
+
+
 if __name__ == '__main__':
     arg = sys.argv[1] if len(sys.argv) == 2 else None
     log.debug( f'argument, `{arg}`' )
+    if arg == 'run_json_query':
+        run_json_query()
+    elif arg == 'get_bibs':
+        get_bibs()
 
 
