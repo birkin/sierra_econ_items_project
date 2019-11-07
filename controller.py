@@ -219,6 +219,7 @@ async def fetch_item_data( index_key, custom_headers, results_holder_dct ):
     log.debug( 'fetch done' )
     return
 
+
 async def get_item_data():
     """ Populates each item-dct with item-data, and saves file. """
     start_time = datetime.datetime.now()
@@ -290,6 +291,83 @@ async def get_item_data():
     ## end get_item_data()
 
 
+async def fetch_bib_data( source_dct, index_key, custom_headers ):
+    bibs_lst = []
+    bibs = source_dct[index_key]['item_dct']['bibIds']
+    for bib in bibs:
+        bib_url = f'{API_ROOT_URL}bibs/'
+        payload = { 'id': bib }
+        url = f'{API_ROOT_URL}bibs/'
+        log.debug( f'url, ```{url}```')
+        rsp = await asks.get( url, headers=custom_headers, params=payload, timeout=3 )
+        bdct = rsp.json()
+        bibs_lst.append( bdct )
+    source_dct[index_key]['bib_dct'] = bibs_lst
+    log.debug( 'fetch done' )
+    return
+
+
+async def add_bib_data():
+    """ Populates each item-dct with bib-data, and saves file. """
+    start_time = datetime.datetime.now()
+    auth_token = get_token()
+    custom_headers = {'Authorization': f'Bearer {auth_token}' }
+    source_dir = f'{FILE_DOWNLOAD_DIR}/c_items_dct'
+    counter = 1
+    for source_file in os.listdir( source_dir ):
+        if source_file.endswith( '.json' ):
+            source_filepath = f'{source_dir}/{source_file}'
+            source_dct = {}
+            with open( source_filepath, 'r' ) as f:
+                source_dct = json.loads( f.read() )
+
+            ## get range info
+            key_lst = list( source_dct.keys() )
+            key_count = len( key_lst )
+            # key_count = 20  # TESTING!!
+            worker_count = 6
+            ( range_count, extra ) = divmod( key_count, worker_count )  # `range_count` is the (equal) size of each range; `extra` is the leftover-count
+            log.debug( f'range_count, `{range_count}`; extra, `{extra}`' )
+            ranges = list( zip(*(iter(range(key_count)),) * worker_count) )  # output, if the range-size was `3`: ```[(0, 1, 2), ... (96, 97, 98)]```
+            log.debug( f'ranges, ```{ranges}```' )
+            range_values = []
+            for sub_range in ranges:
+                sub_range_values = []
+                for index in sub_range:
+                    value = key_lst[index]
+                    sub_range_values.append( value )
+                range_values.append( sub_range_values )
+            log.debug( f'initial range_values, ```{range_values}```' )
+            extra_range = None
+            if extra > 0:
+                extra_range = key_lst[ -extra: ]
+                log.debug( f'extra_range, ```{extra_range}```' )
+
+            ## get to work!
+            for sub_range in range_values:
+                async with trio.open_nursery() as nursery:
+                    for index in sub_range:
+                        log.debug( f'index, `{index}' )
+                        nursery.start_soon( fetch_bib_data, source_dct, index, custom_headers )
+                log.debug( f'end of sub_range' )
+            if extra_range:
+                async with trio.open_nursery() as nursery:
+                    for index in extra_range:
+                        log.debug( f'extra-range index, `{index}' )
+                        nursery.start_soon( fetch_bib_data, source_dct, index, custom_headers )
+            log.debug( f'end of extra_range' )
+
+            save_items_and_bibs_dct( json.dumps(source_dct, sort_keys=True, indent=2), counter )
+            counter += 1
+            ## end of processing of this file
+
+    time_taken = datetime.datetime.now() - start_time
+    log.debug( f'get_item_data time_taken, ```{time_taken}```' )
+    return
+
+    ## end add_bib_data()
+
+
 def add_bib_data():
     """ Populates each item-dct with bib-data, and saves file. """
     start_time = datetime.datetime.now()
@@ -305,42 +383,25 @@ def add_bib_data():
                 source_dct = json.loads( f.read() )
             for (key, val_dct) in source_dct.items():
                 log.debug( f'key, `{key}`' )
+
+                # bibs = source_dct[key]['item_dct']['bibIds']
+                # source_dct[key]['bib_dct'] = bibs
+                bibs_lst = []
                 bibs = source_dct[key]['item_dct']['bibIds']
-                source_dct[key]['bib_dct'] = bibs
+                for bib in bibs:
+                    bib_url = f'{API_ROOT_URL}bibs/'
+                    payload = { 'id': bib }
+                custom_headers = {'Authorization': 'Bearer %s' % auth_token }
+                r = requests.get( bib_url, headers=custom_headers, params=payload )
+                # log.debug( 'bib r.content, ```%s```' % r.content )
+                bdct = r.json()
+                bibs_lst.append( bdct )
+                source_dct[key]['bib_dct'] = bibs_lst
             save_items_and_bibs_dct( json.dumps(source_dct, sort_keys=True, indent=2), counter )
             counter += 1
-
-
-# def add_bib_data():
-#     """ Populates each item-dct with bib-data, and saves file. """
-#     start_time = datetime.datetime.now()
-#     auth_token = get_token()
-#     custom_headers = {'Authorization': f'Bearer {auth_token}' }
-#     source_dir = f'{FILE_DOWNLOAD_DIR}/c_items_dct'
-#     counter = 1
-#     for source_file in os.listdir( source_dir ):
-#         if source_file.endswith( '.json' ):
-#             source_filepath = f'{source_dir}/{source_file}'
-#             source_dct = {}
-#             with open( source_filepath, 'r' ) as f:
-#                 source_dct = json.loads( f.read() )
-#             for (key, val_dct) in source_dct.items():
-#                 log.debug( f'key, `{key}`' )
-
-#                 # bibs = source_dct[key]['item_dct']['bibIds']
-#                 # source_dct[key]['bib_dct'] = bibs
-
-#                 bibs = source_dct[key]['item_dct']['bibIds']
-
-#                 bib_url = '%sbibs/' % API_ROOT_URL
-#                 payload = { 'id': '1000001' }
-#                 log.debug( 'token_url, ```%s```' % token_url )
-#                 custom_headers = {'Authorization': 'Bearer %s' % token }
-#                 r = requests.get( bib_url, headers=custom_headers, params=payload )
-#                 log.debug( 'bib r.content, ```%s```' % r.content )
-
-#             save_items_and_bibs_dct( json.dumps(source_dct, sort_keys=True, indent=2), counter )
-#             counter += 1
+    time_taken = datetime.datetime.now() - start_time
+    log.debug( f'get_item_data time_taken, ```{time_taken}```' )
+    return
 
 
 if __name__ == '__main__':
@@ -354,7 +415,6 @@ if __name__ == '__main__':
         trio.run( get_item_data )
     elif arg == 'add_bib_data':
         add_bib_data()
-    # elif arg == 'enhance_bib_data':
-    #     enhance_bib_data()
-
-
+    elif arg == 'add_bib_data':
+        add_bib_data_async()
+        trio.run( add_bib_data )
