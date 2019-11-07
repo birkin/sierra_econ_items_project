@@ -270,18 +270,13 @@ async def get_item_data():
         log.debug( f'end of extra_range, results_holder_dct, ```{results_holder_dct}```' )
 
         save_items_dct( json.dumps(results_holder_dct, sort_keys=True, indent=2), counter )
+        counter += 1
 
-        break
-
-
-
-
-    # url = 'https://catalog.library.brown.edu/iii/sierra-api/v5/items/10000001'
-    # rsp = await asks.get( url, headers=custom_headers, timeout=2 )
-    # log.debug( f'output, ```{rsp.json()}```' )
     time_taken = datetime.datetime.now() - start_time
     log.debug( f'get_item_data time_taken, ```{time_taken}```' )
     return
+
+    ## end get_item_data()
 
 
 if __name__ == '__main__':
