@@ -232,7 +232,12 @@ async def get_item_data():
                 value = key_lst[index]
                 sub_range_values.append( value )
             range_values.append( sub_range_values )
-        log.debug( f'range_values, ```{range_values}```' )
+        log.debug( f'initial range_values, ```{range_values}```' )
+
+        extra_range = None
+        if extra > 0:
+            extra_range = key_lst[ -extra: ]
+            log.debug( f'extra_range, ```{extra_range}```' )
 
         results_holder_dct = {}
         for sub_range in range_values:
@@ -241,28 +246,15 @@ async def get_item_data():
                     log.debug( f'index, `{index}' )
                     nursery.start_soon( fetch_item_data, index, custom_headers, results_holder_dct )
             log.debug( f'end of sub_range, results_holder_dct, ```{results_holder_dct}```' )
-            if extra > 0:
-                async with trio.open_nursery() as nursery:
-                    for i in range( extra ):
-                        nursery.start_soon( fetch_item_data, index, custom_headers, results_holder_dct )
-
+        if extra_range:
+            async with trio.open_nursery() as nursery:
+                for index in extra_range:
+                    log.debug( f'extra-range index, `{index}' )
+                    nursery.start_soon( fetch_item_data, index, custom_headers, results_holder_dct )
+        log.debug( f'end of extra_range, results_holder_dct, ```{results_holder_dct}```' )
 
         break
 
-
-        # async with trio.open_nursery() as nursery:
-        #     results_holder_dct = {}
-        #     for i, (key, val_dct) in enumerate( source_dct.items() ):
-        #         nursery.start_soon( grab_item_data, key, results_holder_dct )
-
-        #         # nursery.start_soon( self.fetch_945_data, results_holder_dct )
-        #         # nursery.start_soon( self.fetch_sierra_token, results_holder_dct )  # NOTE: after getting token, fetch_sierra_token() will set up its own nursery to call the bib-api and the items-api.
-
-        #         log.debug( f'i, `{i}`' )
-        #         log.debug( f'key, `{key}`' )
-        #         log.debug( f'val_dct, ```{val_dct}```' )
-        #         log.debug( 'nursery start called')
-        #     if i
 
 
 
