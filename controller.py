@@ -47,11 +47,22 @@ def save_initial_downloads( jsn_str, counter ):
 
 
 def save_items_dct( jsn_str, counter ):
-    """ Saves raw json files from initial json-query calls.  TODO: merge with above, passing in directory name
+    """ Saves updated items dct.  TODO: merge with above, passing in directory name
         Called by run_json_query() """
     log.debug( f'counter, `{counter}`')
     counter_str = f'{counter:03}'
     filename= '%s/c_items_dct/%s.json' % ( FILE_DOWNLOAD_DIR, counter_str )
+    with open( filename, 'w' ) as f:
+        f.write( jsn_str )
+    return
+
+
+def save_items_and_bibs_dct( jsn_str, counter ):
+    """ Saves added bibs.  TODO: merge with above, passing in directory name
+        Called by run_json_query() """
+    log.debug( f'counter, `{counter}`')
+    counter_str = f'{counter:03}'
+    filename= '%s/d_items_dct/%s.json' % ( FILE_DOWNLOAD_DIR, counter_str )
     with open( filename, 'w' ) as f:
         f.write( jsn_str )
     return
@@ -227,7 +238,7 @@ async def get_item_data():
         # log.debug( f'key_lst, ```{key_lst}```' )
 
         key_count = len( key_lst )
-        key_count = 10  # TEMP!!
+        # key_count = 10  # TEMP!!
         worker_count = 3
 
         ( range_count, extra ) = divmod( len(key_lst), worker_count )
@@ -279,6 +290,28 @@ async def get_item_data():
     ## end get_item_data()
 
 
+def add_bib_data():
+    """ Populates each item-dct with bib-data, and saves file. """
+    start_time = datetime.datetime.now()
+    auth_token = get_token()
+    custom_headers = {'Authorization': f'Bearer {auth_token}' }
+    source_dir = f'{FILE_DOWNLOAD_DIR}/c_items_dct'
+    counter = 1
+    for source_file in os.listdir( source_dir ):
+        if source_file.endswith( '.json' ):
+            source_filepath = f'{source_dir}/{source_file}'
+            source_dct = {}
+            with open( source_filepath, 'r' ) as f:
+                source_dct = json.loads( f.read() )
+            for (key, val_dct) in source_dct.items():
+                log.debug( f'key, `{key}`' )
+                bibs = source_dct[key]['item_dct']['bibIds']
+                source_dct[key]['bib_dct'] = bibs
+            save_items_and_bibs_dct( json.dumps(source_dct, sort_keys=True, indent=2), counter )
+            counter += 1
+
+
+
 if __name__ == '__main__':
     arg = sys.argv[1] if len(sys.argv) == 2 else None
     log.debug( f'argument, `{arg}`' )
@@ -288,5 +321,7 @@ if __name__ == '__main__':
         make_items_dcts()
     elif arg == 'get_item_data':
         trio.run( get_item_data )
+    elif arg == 'add_bib_data':
+        add_bib_data()
 
 
