@@ -46,6 +46,17 @@ def save_initial_downloads( jsn_str, counter ):
     return
 
 
+def save_items_dct( jsn_str, counter ):
+    """ Saves raw json files from initial json-query calls.  TODO: merge with above, passing in directory name
+        Called by run_json_query() """
+    log.debug( f'counter, `{counter}`')
+    counter_str = f'{counter:03}'
+    filename= '%s/c_items_dct/%s.json' % ( FILE_DOWNLOAD_DIR, counter_str )
+    with open( filename, 'w' ) as f:
+        f.write( jsn_str )
+    return
+
+
 def run_json_query():
     """ Runs the json query and saves all files. """
     log.debug( '\n-------\nrunning the json query' )
@@ -187,9 +198,13 @@ def make_items_dcts():
 
 
 async def fetch_item_data( index_key, custom_headers, results_holder_dct ):
-    url = 'https://httpbin.org/delay/1'
-    rsp = await asks.get( url, headers=custom_headers, timeout=2 )
-    results_holder_dct[ str(index_key) ] = rsp.status_code
+    url = f'https://catalog.library.brown.edu/iii/sierra-api/v5/items/{index_key}'
+    log.debug( f'url, ```{url}```')
+    rsp = await asks.get( url, headers=custom_headers, timeout=3 )
+    results_holder_dct[ str(index_key) ] = {
+        'item_dct': rsp.json(),
+        'bib_dct': None
+        }
     log.debug( 'fetch done' )
     return
 
@@ -200,6 +215,7 @@ async def get_item_data():
     custom_headers = {'Authorization': f'Bearer {auth_token}' }
     source_dir = f'{FILE_DOWNLOAD_DIR}/b_items_dct'
     destination_dir = f'{FILE_DOWNLOAD_DIR}/c_items_dct'
+    counter = 1
     for source_file in os.listdir( source_dir ):
         if source_file.endswith( '.json' ):
             source_filepath = f'{source_dir}/{source_file}'
@@ -252,6 +268,8 @@ async def get_item_data():
                     log.debug( f'extra-range index, `{index}' )
                     nursery.start_soon( fetch_item_data, index, custom_headers, results_holder_dct )
         log.debug( f'end of extra_range, results_holder_dct, ```{results_holder_dct}```' )
+
+        save_items_dct( json.dumps(results_holder_dct, sort_keys=True, indent=2), counter )
 
         break
 
