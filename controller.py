@@ -298,7 +298,8 @@ async def fetch_bib_data( source_dct, index_key, custom_headers ):
         bib_url = f'{API_ROOT_URL}bibs/'
         payload = { 'id': bib }
         url = f'{API_ROOT_URL}bibs/'
-        log.debug( f'url, ```{url}```')
+        # log.debug( f'url, ```{url}```')
+        log.debug( f'hitting bib-api for index_key, `{index_key}` & bib, `{bib}`' )
         rsp = await asks.get( url, headers=custom_headers, params=payload, timeout=3 )
         bdct = rsp.json()
         bibs_lst.append( bdct )
@@ -307,7 +308,7 @@ async def fetch_bib_data( source_dct, index_key, custom_headers ):
     return
 
 
-async def add_bib_data():
+async def add_bib_data_async():
     """ Populates each item-dct with bib-data, and saves file. """
     start_time = datetime.datetime.now()
     auth_token = get_token()
@@ -362,10 +363,10 @@ async def add_bib_data():
             ## end of processing of this file
 
     time_taken = datetime.datetime.now() - start_time
-    log.debug( f'get_item_data time_taken, ```{time_taken}```' )
+    log.info( f'get_item_data time_taken, ```{time_taken}```' )
     return
 
-    ## end add_bib_data()
+    ## end async add_bib_data()
 
 
 def add_bib_data():
@@ -400,7 +401,7 @@ def add_bib_data():
             save_items_and_bibs_dct( json.dumps(source_dct, sort_keys=True, indent=2), counter )
             counter += 1
     time_taken = datetime.datetime.now() - start_time
-    log.debug( f'get_item_data time_taken, ```{time_taken}```' )
+    log.info( f'get_item_data time_taken, ```{time_taken}```' )
     return
 
 
@@ -415,6 +416,7 @@ if __name__ == '__main__':
         trio.run( get_item_data )
     elif arg == 'add_bib_data':
         add_bib_data()
-    elif arg == 'add_bib_data':
-        add_bib_data_async()
-        trio.run( add_bib_data )
+    elif arg == 'add_bib_data_async':
+        trio.run( add_bib_data_async )
+    else:
+        print( 'bad argument' )
