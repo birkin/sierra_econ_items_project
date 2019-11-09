@@ -405,6 +405,23 @@ def add_bib_data():
     return
 
 
+def test_mapper( element_tuple ):
+    str_lst = [ 'a', 'b', 'c', 'd' ]
+    new_list = []
+    for idx in element_tuple:
+        new_list.append( str_lst[idx] )
+    new_tuple = tuple( new_list )
+    return new
+
+def test():
+    tpl_lst = [ (0, 1), (2, 3) ]
+    output = map( test_mapper, tpl_lst )
+    log.debug( f'output, ```{list(output)}```' )
+    return
+
+
+
+
 if __name__ == '__main__':
     arg = sys.argv[1] if len(sys.argv) == 2 else None
     log.debug( f'argument, `{arg}`' )
@@ -418,5 +435,7 @@ if __name__ == '__main__':
         add_bib_data()
     elif arg == 'add_bib_data_async':
         trio.run( add_bib_data_async )
+    elif arg == 'test':
+        test()
     else:
         print( 'bad argument' )
